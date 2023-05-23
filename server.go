@@ -1,12 +1,9 @@
-package main
+package httpserver
 
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -16,34 +13,6 @@ const (
 	httpShutdownPreStopDelaySeconds = 1
 	httpShutdownTimeoutSeconds      = 1
 )
-
-func main() {
-	log.Print("go-yahs starting")
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	var group errgroup.Group
-
-	group.Go(func() error {
-		<-ctx.Done()
-
-		log.Print("received OS signal to shutdown, use Ctrl+C again to force")
-
-		// reset signals so a second ctrl+c will terminate the application.
-		stop()
-
-		return nil
-	})
-
-	group.Go(func() error {
-		return Run(ctx)
-	})
-
-	if err := group.Wait(); err != nil {
-		log.Print(err)
-	}
-}
 
 // Run starts an HTTP server and gracefully shuts down when the provided
 // context is marked done.
