@@ -9,3 +9,4 @@ Example implementations of common requirements for website serving applications.
 1. Basic HTTP server - https://github.com/karlskewes/go-yahs/pull/1
 1. GitHub Action CI to lint & test - https://github.com/karlskewes/go-yahs/pull/2
 1. Graceful shutdown - https://github.com/karlskewes/go-yahs/pull/4
+1. Testable application invocations. Split `main()` with `Run()` - https://github.com/karlskewes/go-yahs/pull/5
