@@ -20,13 +20,6 @@ const (
 func main() {
 	log.Print("go-yahs starting")
 
-	mux := http.NewServeMux()
-	mux.Handle("/", http.NotFoundHandler())
-	srv := &http.Server{
-		Addr:    "localhost:8080",
-		Handler: mux,
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -37,8 +30,35 @@ func main() {
 
 		log.Print("received OS signal to shutdown, use Ctrl+C again to force")
 
-		// reset signals so ctrl+c can be captured again
+		// reset signals so a second ctrl+c will terminate the application.
 		stop()
+
+		return nil
+	})
+
+	group.Go(func() error {
+		return Run(ctx)
+	})
+
+	if err := group.Wait(); err != nil {
+		log.Print(err)
+	}
+}
+
+// Run starts an HTTP server and gracefully shuts down when the provided
+// context is marked done.
+func Run(ctx context.Context) error {
+	mux := http.NewServeMux()
+	mux.Handle("/", http.NotFoundHandler())
+	srv := &http.Server{
+		Addr:    "localhost:8080",
+		Handler: mux,
+	}
+
+	var group errgroup.Group
+
+	group.Go(func() error {
+		<-ctx.Done()
 
 		// before shutting down the HTTP server wait for any HTTP requests that are
 		// in transit on the network. Common in Kubernetes and other distributed
@@ -62,7 +82,5 @@ func main() {
 		return err
 	})
 
-	if err := group.Wait(); err != nil {
-		log.Print(err)
-	}
+	return group.Wait()
 }

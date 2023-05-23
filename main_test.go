@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func TestMain(t *testing.T) {
-	go main()
+func TestRun(t *testing.T) {
+	go Run(context.Background())
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:8080", nil)
 	if err != nil {
