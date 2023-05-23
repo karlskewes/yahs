@@ -46,7 +46,7 @@ jobs:
           git diff --exit-code -- go.mod go.sum
 
       - name: Run go build
-        run: go build ./main.go
+        run: go build ./cmd/server/main.go
 
       - name: Staticcheck
         uses: dominikh/staticcheck-action@v1.3.0
