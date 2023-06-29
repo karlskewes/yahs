@@ -8,7 +8,9 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	go Run(context.Background())
+	app := NewApp()
+	//nolint:errcheck // If app fails to run then the test will fail.
+	go app.Run(context.Background())
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:8080", nil)
 	if err != nil {

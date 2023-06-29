@@ -12,18 +12,31 @@ import (
 const (
 	httpShutdownPreStopDelaySeconds = 1
 	httpShutdownTimeoutSeconds      = 1
+	defaultListenAddr               = "localhost:8080"
 )
 
-// Run starts an HTTP server and gracefully shuts down when the provided
-// context is marked done.
-func Run(ctx context.Context) error {
+// App holds configuration for our httpserver.
+type App struct {
+	srv *http.Server
+}
+
+// NewApp returns an instance of our httpserver.
+func NewApp() *App {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.NotFoundHandler())
 	srv := &http.Server{
-		Addr:    "localhost:8080",
+		Addr:    defaultListenAddr,
 		Handler: mux,
 	}
 
+	return &App{
+		srv: srv,
+	}
+}
+
+// Run starts the HTTP Server application and gracefully shuts down when the
+// provided context is marked done.
+func (app *App) Run(ctx context.Context) error {
 	var group errgroup.Group
 
 	group.Go(func() error {
@@ -38,11 +51,11 @@ func Run(ctx context.Context) error {
 		ctx2, cancel := context.WithTimeout(ctx, httpShutdownTimeoutSeconds*time.Second)
 		defer cancel()
 
-		return srv.Shutdown(ctx2)
+		return app.srv.Shutdown(ctx2)
 	})
 
 	group.Go(func() error {
-		err := srv.ListenAndServe()
+		err := app.srv.ListenAndServe()
 		// http.ErrServerClosed is expected at shutdown.
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
