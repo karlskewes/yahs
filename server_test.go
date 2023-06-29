@@ -8,7 +8,10 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	app := NewApp()
+	app, err := NewApp()
+	if err != nil {
+		t.Fatalf("failed to create new app: %v", err)
+	}
 	//nolint:errcheck // If app fails to run then the test will fail.
 	go app.Run(context.Background())
 

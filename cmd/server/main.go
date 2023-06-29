@@ -13,7 +13,10 @@ import (
 func main() {
 	log.Print("go-yahs starting")
 
-	app := httpserver.NewApp()
+	app, err := httpserver.NewApp()
+	if err != nil {
+		log.Fatalf("failed to create new app: %v", err)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

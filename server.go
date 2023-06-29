@@ -20,8 +20,12 @@ type App struct {
 	srv *http.Server
 }
 
-// NewApp returns an instance of our httpserver.
-func NewApp() *App {
+// Option configures an App.
+type Option func(a *App) error
+
+// NewApp returns an instance of our httpserver with default settings.
+// Custom configuration provided by supplying Options take precedence.
+func NewApp(options ...Option) (*App, error) {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.NotFoundHandler())
 	srv := &http.Server{
@@ -29,9 +33,18 @@ func NewApp() *App {
 		Handler: mux,
 	}
 
-	return &App{
+	app := &App{
 		srv: srv,
 	}
+
+	for _, option := range options {
+		err := option(app)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return app, nil
 }
 
 // Run starts the HTTP Server application and gracefully shuts down when the
