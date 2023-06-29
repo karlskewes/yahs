@@ -3,6 +3,7 @@ package httpserver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -21,7 +22,7 @@ type App struct {
 }
 
 // Option configures an App.
-type Option func(a *App) error
+type Option func(app *App) error
 
 // NewApp returns an instance of our httpserver with default settings.
 // Custom configuration provided by supplying Options take precedence.
@@ -45,6 +46,20 @@ func NewApp(options ...Option) (*App, error) {
 	}
 
 	return app, nil
+}
+
+// WithHTTPServer Option enables supplying a custom http.Server configured with
+// handler, timeouts, listen address, transport configuration, etc.
+func WithHTTPServer(srv *http.Server) Option {
+	return func(app *App) error {
+		if srv == nil {
+			return fmt.Errorf("provided http.Server must not be nil")
+		}
+
+		app.srv = srv
+
+		return nil
+	}
 }
 
 // Run starts the HTTP Server application and gracefully shuts down when the
