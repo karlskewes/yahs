@@ -13,6 +13,8 @@ import (
 func main() {
 	log.Print("go-yahs starting")
 
+	app := httpserver.NewApp()
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -29,7 +31,7 @@ func main() {
 	})
 
 	group.Go(func() error {
-		return httpserver.Run(ctx)
+		return app.Run(ctx)
 	})
 
 	if err := group.Wait(); err != nil {
