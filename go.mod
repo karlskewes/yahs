@@ -1,4 +1,4 @@
-module github.com/karlskewes/go-yahs
+module github.com/karlskewes/yahs
 
 go 1.20
 

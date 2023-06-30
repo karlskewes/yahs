@@ -6,14 +6,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	httpserver "github.com/karlskewes/go-yahs"
+	"github.com/karlskewes/yahs"
 	"golang.org/x/sync/errgroup"
 )
 
 func main() {
-	log.Print("go-yahs starting")
+	log.Print("yahs starting")
 
-	app, err := httpserver.NewApp()
+	app, err := yahs.NewApp()
 	if err != nil {
 		log.Fatalf("failed to create new app: %v", err)
 	}
