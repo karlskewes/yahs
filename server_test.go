@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -36,15 +37,105 @@ func TestWithHTTPServer(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.Handle("/", http.NotFoundHandler())
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", httpListenPort),
-		Handler: mux,
+func TestWithListenAddr(t *testing.T) {
+	t.Parallel()
+	want := "1.2.3.4:8080"
+
+	hs, err := New(WithListenAddress(want))
+	if err != nil {
+		t.Errorf("failed to set legitimate http server: %v", err)
 	}
 
-	hs, err := New(WithHTTPServer(srv))
+	if hs.srv.Addr != want {
+		t.Errorf("unexpected http.Addr set, want: %v - got: %v", want, hs.srv.Addr)
+	}
+}
+
+func TestAddRoute(t *testing.T) {
+	t.Parallel()
+
+	hs, err := New()
+	if err != nil {
+		t.Errorf("failed to create new http server: %v", err)
+	}
+
+	method := "GET"
+	pattern := "/path/to/endpoint"
+	handler := http.NotFoundHandler().ServeHTTP
+
+	hs.AddRoute(method, pattern, handler)
+
+	if len(hs.routes) != 1 {
+		t.Errorf("unexpected number of routes, want: %d - got: %d", 1, len(hs.routes))
+	}
+
+	if hs.routes[0].method != method {
+		t.Errorf("unexpected method, want: %s - got: %s", method, hs.routes[0].method)
+	}
+
+	if hs.routes[0].pattern.String() != "^"+pattern+"$" {
+		t.Errorf("unexpected regex pattern, want: %s - got: %s", pattern, hs.routes[0].pattern.String())
+	}
+}
+
+func TestServe_NoRoutes(t *testing.T) {
+	hs, err := New()
+	if err != nil {
+		t.Errorf("failed to set legitimate http server: %v", err)
+	}
+
+	ts := httptest.NewServer(hs.srv.Handler)
+
+	t.Cleanup(func() {
+		ts.Close()
+	})
+
+	resp, err := http.Get(ts.URL)
+	if err != nil {
+		t.Errorf("failed to query http server: %v", err)
+	}
+
+	want := http.StatusNotFound
+	if resp.StatusCode != want {
+		t.Errorf("want: %d - got: %d", want, resp.StatusCode)
+	}
+}
+
+func TestServe_CustomRoute(t *testing.T) {
+	hs, err := New()
+	if err != nil {
+		t.Errorf("failed to set legitimate http server: %v", err)
+	}
+
+	method := "GET"
+	pattern := "/path/to/endpoint"
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTeapot)
+	}
+
+	hs.AddRoute(method, pattern, handler)
+
+	ts := httptest.NewServer(hs.srv.Handler)
+
+	t.Cleanup(func() {
+		ts.Close()
+	})
+
+	resp, err := http.Get(ts.URL + pattern)
+	if err != nil {
+		t.Errorf("failed to query http server: %v", err)
+	}
+
+	want := http.StatusTeapot
+	if resp.StatusCode != want {
+		t.Errorf("want: %d - got: %d", want, resp.StatusCode)
+	}
+}
+
+func TestRun(t *testing.T) {
+	hs, err := New(
+		WithListenAddress(fmt.Sprintf(":%d", httpListenPort)),
+	)
 	if err != nil {
 		t.Errorf("failed to set legitimate http server: %v", err)
 	}
