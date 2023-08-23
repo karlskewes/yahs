@@ -3,6 +3,7 @@ package yahs
 import (
 	"context"
 	"errors"
+	"html/template"
 	"net/http"
 	"regexp"
 	"strings"
@@ -25,8 +26,10 @@ type route struct {
 
 // Server holds configuration for our httpserver.
 type Server struct {
-	routes []route
-	srv    *http.Server
+	routes    []route
+	srv       *http.Server
+	assets    http.FileSystem
+	templates map[string]*template.Template
 }
 
 // Option configures a HTTP Server.
