@@ -13,9 +13,9 @@ import (
 func main() {
 	log.Print("yahs starting")
 
-	app, err := yahs.NewApp()
+	hs, err := yahs.New()
 	if err != nil {
-		log.Fatalf("failed to create new app: %v", err)
+		log.Fatalf("failed to create new http server: %v", err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -34,7 +34,7 @@ func main() {
 	})
 
 	group.Go(func() error {
-		return app.Run(ctx)
+		return hs.Run(ctx)
 	})
 
 	if err := group.Wait(); err != nil {
