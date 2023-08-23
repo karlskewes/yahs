@@ -10,11 +10,11 @@ import (
 
 const httpListenPort = 65123
 
-func TestNewApp(t *testing.T) {
+func TestNewHTTPServer(t *testing.T) {
 	t.Parallel()
-	_, err := NewApp()
+	_, err := New()
 	if err != nil {
-		t.Errorf("failed to create new app: %v", err)
+		t.Errorf("failed to create new http server: %v", err)
 	}
 }
 
@@ -26,13 +26,13 @@ func TestWithHTTPServer(t *testing.T) {
 		Handler: mux,
 	}
 
-	app, err := NewApp(WithHTTPServer(srv))
+	hs, err := New(WithHTTPServer(srv))
 	if err != nil {
 		t.Errorf("failed to set legitimate http server: %v", err)
 	}
 
-	if app.srv != srv {
-		t.Errorf("unexpected http.Server set, want: %v - got: %v", srv, app.srv)
+	if hs.srv != srv {
+		t.Errorf("unexpected http.Server set, want: %v - got: %v", srv, hs.srv)
 	}
 }
 
@@ -44,13 +44,13 @@ func TestRun(t *testing.T) {
 		Handler: mux,
 	}
 
-	app, err := NewApp(WithHTTPServer(srv))
+	hs, err := New(WithHTTPServer(srv))
 	if err != nil {
 		t.Errorf("failed to set legitimate http server: %v", err)
 	}
 
 	//nolint:errcheck // If app fails to run then the test will fail.
-	go app.Run(context.Background())
+	go hs.Run(context.Background())
 
 	req, err := http.NewRequestWithContext(
 		context.Background(),

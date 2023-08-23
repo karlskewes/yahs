@@ -14,3 +14,4 @@ Example implementations of common requirements for website serving applications.
 1. Create an `App` type to hold config & state - https://github.com/karlskewes/yahs/pull/7
 1. Functional Options pattern for config, support custom `http.Server{}` - https://github.com/karlskewes/yahs/pull/8
 1. Rename package to `yahs` for simpler imports - https://github.com/karlskewes/yahs/pull/9
+1. Enable route updating, using as a libray - https://github.com/karlskewes/yahs/pull/10
