@@ -16,17 +16,17 @@ const (
 	defaultListenAddr               = "localhost:8080"
 )
 
-// App holds configuration for our httpserver.
-type App struct {
+// Server holds configuration for our httpserver.
+type Server struct {
 	srv *http.Server
 }
 
-// Option configures an App.
-type Option func(app *App) error
+// Option configures a HTTP Server.
+type Option func(hs *Server) error
 
-// NewApp returns an instance of our httpserver with default settings.
+// New returns an instance of our httpserver with default settings.
 // Custom configuration provided by supplying Options take precedence.
-func NewApp(options ...Option) (*App, error) {
+func New(options ...Option) (*Server, error) {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.NotFoundHandler())
 	srv := &http.Server{
@@ -34,29 +34,29 @@ func NewApp(options ...Option) (*App, error) {
 		Handler: mux,
 	}
 
-	app := &App{
+	hs := &Server{
 		srv: srv,
 	}
 
 	for _, option := range options {
-		err := option(app)
+		err := option(hs)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return app, nil
+	return hs, nil
 }
 
 // WithHTTPServer Option enables supplying a custom http.Server configured with
 // handler, timeouts, listen address, transport configuration, etc.
 func WithHTTPServer(srv *http.Server) Option {
-	return func(app *App) error {
+	return func(hs *Server) error {
 		if srv == nil {
 			return fmt.Errorf("provided http.Server must not be nil")
 		}
 
-		app.srv = srv
+		hs.srv = srv
 
 		return nil
 	}
@@ -64,7 +64,7 @@ func WithHTTPServer(srv *http.Server) Option {
 
 // Run starts the HTTP Server application and gracefully shuts down when the
 // provided context is marked done.
-func (app *App) Run(ctx context.Context) error {
+func (hs *Server) Run(ctx context.Context) error {
 	var group errgroup.Group
 
 	group.Go(func() error {
@@ -79,11 +79,11 @@ func (app *App) Run(ctx context.Context) error {
 		ctx2, cancel := context.WithTimeout(ctx, httpShutdownTimeoutSeconds*time.Second)
 		defer cancel()
 
-		return app.srv.Shutdown(ctx2)
+		return hs.srv.Shutdown(ctx2)
 	})
 
 	group.Go(func() error {
-		err := app.srv.ListenAndServe()
+		err := hs.srv.ListenAndServe()
 		// http.ErrServerClosed is expected at shutdown.
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
