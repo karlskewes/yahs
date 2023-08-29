@@ -16,3 +16,4 @@ Example implementations of common requirements for website serving applications.
 1. Rename package to `yahs` for simpler imports - https://github.com/karlskewes/yahs/pull/9
 1. Rename HTTP Server from App to Server - https://github.com/karlskewes/yahs/pull/10
 1. Custom Route handling - https://github.com/karlskewes/yahs/pull/11
+1. Embedded filesystem for assets and HTML templates - https://github.com/karlskewes/yahs/pull/12
