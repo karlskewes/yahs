@@ -63,7 +63,8 @@ func TestAddRoute(t *testing.T) {
 	pattern := "/path/to/endpoint"
 	handler := http.NotFoundHandler().ServeHTTP
 
-	hs.AddRoute(method, pattern, handler)
+	route := NewRoute(method, pattern, handler)
+	hs.AddRoute(route)
 
 	if len(hs.routes) != 1 {
 		t.Errorf("unexpected number of routes, want: %d - got: %d", 1, len(hs.routes))
@@ -75,6 +76,35 @@ func TestAddRoute(t *testing.T) {
 
 	if hs.routes[0].pattern.String() != "^"+pattern+"$" {
 		t.Errorf("unexpected regex pattern, want: %s - got: %s", pattern, hs.routes[0].pattern.String())
+	}
+}
+
+func TestSetRoute(t *testing.T) {
+	t.Parallel()
+
+	hs, err := New()
+	if err != nil {
+		t.Errorf("failed to create new http server: %v", err)
+	}
+
+	method := "GET"
+	pattern := "/path/to/endpoint"
+	handler := http.NotFoundHandler().ServeHTTP
+
+	route1 := NewRoute(method, pattern+"1", handler)
+	route2 := NewRoute(method, pattern+"2", handler)
+	hs.SetRoutes([]Route{route1, route2})
+
+	if len(hs.routes) != 2 {
+		t.Errorf("unexpected number of routes, want: %d - got: %d", 2, len(hs.routes))
+	}
+
+	if hs.routes[0].pattern.String() != "^"+pattern+"1$" {
+		t.Errorf("unexpected regex pattern, want: %s - got: %s", pattern+"1", hs.routes[0].pattern.String())
+	}
+
+	if hs.routes[1].pattern.String() != "^"+pattern+"2$" {
+		t.Errorf("unexpected regex pattern, want: %s - got: %s", pattern+"2", hs.routes[1].pattern.String())
 	}
 }
 
@@ -113,7 +143,9 @@ func TestServe_CustomRoute(t *testing.T) {
 		w.WriteHeader(http.StatusTeapot)
 	}
 
-	hs.AddRoute(method, pattern, handler)
+	hs.AddRoute(
+		NewRoute(method, pattern, handler),
+	)
 
 	ts := httptest.NewServer(hs.srv.Handler)
 

@@ -72,7 +72,7 @@ func NewApp(hs *yahs.Server, logger *slog.Logger) *App {
 }
 
 func (ws *App) addRoutes() {
-	ws.hs.AddRoute("GET", "/", ws.Home)
+	ws.hs.AddRoute(yahs.NewRoute("GET", "/", ws.Home))
 }
 
 func (ws *App) Home(w http.ResponseWriter, r *http.Request) {

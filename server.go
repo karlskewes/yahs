@@ -18,15 +18,27 @@ const (
 	defaultListenAddr               = "localhost:8080"
 )
 
-type route struct {
+// Route contains the HTTP routing information required to match an incoming
+// HTTP request and direct to the included handler.
+type Route struct {
 	method  string
 	pattern *regexp.Regexp
 	handler http.HandlerFunc
 }
 
-// Server holds configuration for our httpserver.
+// NewRoute creates a HTTP Route which can be used with AddRoute() or SetRoute().
+// Regex pattern input will be anchored.
+func NewRoute(method, pattern string, handler http.HandlerFunc) Route {
+	return Route{
+		method:  method,
+		pattern: regexp.MustCompile("^" + pattern + "$"),
+		handler: handler,
+	}
+}
+
+// Server contains configuration for the HTTP Server.
 type Server struct {
-	routes    []route
+	routes    []Route
 	srv       *http.Server
 	assets    http.FileSystem
 	templates map[string]*template.Template
@@ -45,7 +57,8 @@ func New(options ...Option) (*Server, error) {
 	}
 
 	hs := &Server{
-		srv: srv,
+		srv:       srv,
+		templates: make(map[string]*template.Template),
 	}
 
 	// Delegate HTTP routing to our custom ServeHTTP handler Serve().
@@ -92,16 +105,22 @@ func WithHTTPServer(srv *http.Server) Option {
 	}
 }
 
-// AddRoute adds a route to the HTTP mux. Regex pattern input will be anchored.
-func (hs *Server) AddRoute(method, pattern string, handler http.HandlerFunc) {
-	route := route{
-		method:  method,
-		pattern: regexp.MustCompile("^" + pattern + "$"),
-		handler: handler,
-	}
+// AddRoute adds a route to the HTTP mux. Routes are evaluated sequentially
+// until the first match is found.
+func (hs *Server) AddRoute(route Route) {
 	// TODO: race condition, mutating slice whilst Serve could be reading slice.
 	// Consider locking during hs.Run().
 	hs.routes = append(hs.routes, route)
+}
+
+// SetRoutes replaces any existing routes with the slice of routes provided.
+// Routes are evaluated sequentially until the first match is found.
+func (hs *Server) SetRoutes(routes []Route) {
+	if routes == nil {
+		routes = make([]Route, 0)
+	}
+
+	hs.routes = routes
 }
 
 // Serve is the entry point for handling all http requests. It performs routing
