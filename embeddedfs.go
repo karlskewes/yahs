@@ -44,6 +44,9 @@ func NewWWWRoot() WWWRoot {
 // path metadata. Templates are parsed once at startup and stored in a hash map
 // to reduce compute and serve latency at runtime when handling inbound
 // requests.
+// Default Route's are added for static files and templates. These Route's may
+// match before any custom Route's. Consider using SetRoute() to define
+// precedence.
 // Consider alternatives like build flag based determining if live or embed.
 // See after enable option to serve live files too.
 func WithEmbeddedFS(wwwroot WWWRoot) Option {
@@ -61,15 +64,19 @@ func WithEmbeddedFS(wwwroot WWWRoot) Option {
 		hs.assets = http.FS(fsys)
 
 		hs.AddRoute(
-			"GET",
-			"/static/.*",
-			http.StripPrefix("/static/", hs.handleStaticFiles()).ServeHTTP,
+			NewRoute(
+				"GET",
+				"/static/.*",
+				http.StripPrefix("/static/", hs.HandleStaticFiles()).ServeHTTP,
+			),
 		)
 
 		hs.AddRoute(
-			"GET",
-			"/.*",
-			hs.handleTemplates(),
+			NewRoute(
+				"GET",
+				"/.*",
+				hs.HandleTemplates(),
+			),
 		)
 
 		return nil
@@ -77,10 +84,6 @@ func WithEmbeddedFS(wwwroot WWWRoot) Option {
 }
 
 func (hs *Server) loadTemplates(fsTemplates fs.FS, pagesDir, layoutsDir string) error {
-	if hs.templates == nil {
-		hs.templates = make(map[string]*template.Template)
-	}
-
 	if fsTemplates == nil {
 		return errors.New("fsTemplates === nil")
 	}
@@ -119,7 +122,9 @@ func (hs *Server) loadTemplates(fsTemplates fs.FS, pagesDir, layoutsDir string) 
 	return nil
 }
 
-func (hs *Server) handleTemplates() http.HandlerFunc {
+// HandleTemplates is a HTTP handler for Go html/templates supplied to
+// WithEmbeddedFS().
+func (hs *Server) HandleTemplates() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fp := filepath.Join("", filepath.Clean(r.URL.Path))
 
@@ -148,7 +153,9 @@ func (hs *Server) handleTemplates() http.HandlerFunc {
 	}
 }
 
-func (hs *Server) handleStaticFiles() http.HandlerFunc {
+// HandleStaticFiles is a HTTP handler for static files available in the
+// embedded filesystem supplied to WithEmbeddedFS().
+func (hs *Server) HandleStaticFiles() http.HandlerFunc {
 	fs := http.FileServer(hs.assets)
 
 	return func(w http.ResponseWriter, r *http.Request) {

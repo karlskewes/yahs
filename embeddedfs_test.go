@@ -80,7 +80,7 @@ func TestHandleTemplates(t *testing.T) {
 			t.Parallel()
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
 			w := httptest.NewRecorder()
-			hs.handleTemplates().ServeHTTP(w, req)
+			hs.HandleTemplates().ServeHTTP(w, req)
 			res := w.Result()
 			defer res.Body.Close()
 			if tc.statusCode != res.StatusCode {
@@ -97,13 +97,9 @@ func BenchmarkHandleTemplates(b *testing.B) {
 		b.Fatalf("failed to create http server: %v", err)
 	}
 
-	// TODO
-	// b.Cleanup(func() { _ = s.Shutdown() })
-	b.Logf("b.N is %d", b.N)
-
 	for i := 0; i < b.N; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/index.html", nil)
 		w := httptest.NewRecorder()
-		hs.handleTemplates().ServeHTTP(w, req)
+		hs.HandleTemplates().ServeHTTP(w, req)
 	}
 }
