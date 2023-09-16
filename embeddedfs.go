@@ -122,8 +122,41 @@ func (hs *Server) loadTemplates(fsTemplates fs.FS, pagesDir, layoutsDir string) 
 	return nil
 }
 
+// HandleTemplate is a HTTP handler for Go html/templates supplied to
+// WithEmbeddedFS() that supports specifying the template name and providing
+// data to hydrate template variables.
+func (hs *Server) HandleTemplate(name string, data any) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fp := filepath.Join("", filepath.Clean(r.URL.Path))
+
+		if strings.HasSuffix(r.URL.Path, "/") {
+			fp = filepath.Join(fp, "index.html")
+		}
+
+		tmpl, ok := hs.templates[fp]
+		if !ok {
+			http.NotFoundHandler().ServeHTTP(w, r)
+
+			return
+		}
+
+		var buf bytes.Buffer
+		if err := tmpl.ExecuteTemplate(&buf, name, data); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+
+		_, err := buf.WriteTo(w)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
+			return
+		}
+	}
+}
+
 // HandleTemplates is a HTTP handler for Go html/templates supplied to
-// WithEmbeddedFS().
+// WithEmbeddedFS(). It expects a template called "layout" and does not support
+// passing data to templates, see HandleTemplate().
 func (hs *Server) HandleTemplates() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fp := filepath.Join("", filepath.Clean(r.URL.Path))
