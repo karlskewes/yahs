@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"html/template"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -158,6 +159,11 @@ func (hs *Server) Serve(w http.ResponseWriter, r *http.Request) {
 // Run starts the HTTP Server application and gracefully shuts down when the
 // provided context is marked done.
 func (hs *Server) Run(ctx context.Context) error {
+	ln, err := net.Listen("tcp", hs.srv.Addr)
+	if err != nil {
+		return err
+	}
+
 	var group errgroup.Group
 
 	group.Go(func() error {
@@ -176,7 +182,7 @@ func (hs *Server) Run(ctx context.Context) error {
 	})
 
 	group.Go(func() error {
-		err := hs.srv.ListenAndServe()
+		err := hs.srv.Serve(ln)
 		// http.ErrServerClosed is expected at shutdown.
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
