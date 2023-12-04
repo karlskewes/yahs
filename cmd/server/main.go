@@ -30,12 +30,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	cctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+
 	var group errgroup.Group
 	group.Go(func() error {
-		<-ctx.Done()
+		<-cctx.Done()
 
-		log.Print("received OS signal to shutdown, use Ctrl+C again to force")
-
+		if context.Cause(cctx) == context.Canceled {
+			log.Print("received OS signal to shutdown, use Ctrl+C again to force")
+		}
 		// reset signals so a second ctrl+c will terminate the application.
 		stop()
 
@@ -43,7 +47,9 @@ func main() {
 	})
 
 	group.Go(func() error {
-		return app.hs.Run(ctx)
+		err := app.hs.Run(cctx)
+		cancel(err)
+		return err
 	})
 
 	if err := group.Wait(); err != nil {
